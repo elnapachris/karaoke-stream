@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Karaoke - El Napa Chris</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f1f1f1;
+            color: #333;
+        }
+        header {
+            background-color: #ff4757;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 24px;
+            border-radius: 0 0 15px 15px;
+        }
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        button {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .move-up, .move-down {
+            background-color: #1e90ff;
+            color: white;
+        }
+        .delete {
+            background-color: #ff4757;
+            color: white;
+        }
+        .clear-queue {
+            margin: 20px;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #auth-section {
+            text-align: center;
+            margin: 20px;
+        }
+        /* Nuevas clases para ajustar el ancho de las columnas */
+        .nro-pos {
+            width: 40px; /* Ajustar tamaño de la columna de posición */
+        }
+        .nro-mesa {
+            width: 80px; /* Ajustar tamaño de la columna de Nro de Mesa */
+        }
+        .acciones {
+            width: 80px; /* Ajustar tamaño de la columna de Acciones */
+        }
+        .nombre {
+            width: 100px; /* Ajustar tamaño de la columna de Nombre */
+        }
+        .artista {
+            width: 120px; /* Ajustar tamaño de la columna de Artista */
+        }
+        .cancion {
+            width: 140px; /* Ajustar tamaño de la columna de Canción */
+        }
+        .tipo {
+            width: 70px; /* Ajustar tamaño de la columna de Tipo */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        🎶 Administra la Cola de Canciones - Versión <span id="version">3.2</span> 🎶
+    </header>
+
+    <!-- Formulario de inicio de sesión -->
+    <div id="auth-section">
+        <h2>Iniciar Sesión</h2>
+        <input type="email" id="email" placeholder="Correo electrónico">
+        <input type="password" id="password" placeholder="Contraseña">
+        <button onclick="login()">Iniciar Sesión</button>
+    </div>
+
+    <!-- Contenido para administradores autenticados -->
+    <div id="admin-content" style="display: none;">
+        <table id="songQueue">
+            <thead>
+                <tr>
+                    <th class="nro-pos">Posición</th>
+                    <th class="nro-mesa">Nro de Mesa</th>
+                    <th class="nombre">Nombre</th>
+                    <th class="artista">Artista</th>
+                    <th class="cancion">Canción</th>
+                    <th class="tipo">Tipo</th>
+                    <th class="acciones">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Canciones agregadas dinámicamente -->
+            </tbody>
+        </table>
+        <button class="clear-queue" onclick="clearQueue()">Limpiar Cola de Canciones</button>
+        <button onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <!-- Incluyendo el SDK compatible de Firebase versión 9 -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+
+    <script>
+        // Aseguramos que Firebase esté disponible antes de usarlo
+        document.addEventListener('DOMContentLoaded', function () {
+            // Configuración de Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyCZO0_L7XnP4E-ChOhvDERTjLhyVZhgqWY",
+                authDomain: "karaokedatabase-c6a7d.firebaseapp.com",
+                databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com/",
+                projectId: "karaokedatabase-c6a7d",
+                storageBucket: "karaokedatabase-c6a7d.appspot.com",
+                messagingSenderId: "340448181357",
+                appId: "1:340448181357:web:1152f5473929db98631364",
+                measurementId: "G-YT1DNPVQD7"
+            };
+
+            // Inicializa Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const database = firebase.database();
+
+            let songs = []; // Variable para almacenar la lista de canciones
+
+            window.login = function () {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        console.log("Usuario autenticado");
+                    })
+                    .catch(error => {
+                        alert("Error al iniciar sesión: " + error.message);
+                    });
+            };
+
+            window.logout = function () {
+                auth.signOut().then(() => {
+                    console.log("Usuario desconectado");
+                }).catch(error => {
+                    console.error("Error al cerrar sesión: ", error);
+                });
+            };
+
+            auth.onAuthStateChanged((user) => {
+                const authSection = document.getElementById('auth-section');
+                const adminContent = document.getElementById('admin-content');
+                if (user) {
+                    authSection.style.display = 'none';
+                    adminContent.style.display = 'block';
+                    loadQueue(); // Cargar la cola al autenticarse
+                } else {
+                    authSection.style.display = 'block';
+                    adminContent.style.display = 'none';
+                }
+            });
+
+            window.loadQueue = function () {
+                const songQueue = document.getElementById('songQueue').querySelector('tbody');
+                database.ref('songs').on('value', (snapshot) => {
+                    songs = [];
+                    snapshot.forEach((childSnapshot) => {
+                        songs.push({
+                            id: childSnapshot.key,
+                            ...childSnapshot.val()
+                        });
+                    });
+                    songs.sort((a, b) => a.position - b.position);
+                    renderQueue(songs);
+                });
+            };
+
+            window.renderQueue = function (songs) {
+                const songQueue = document.getElementById('songQueue').querySelector('tbody');
+                songQueue.innerHTML = '';
+                songs.forEach((song, index) => {
+                    const row = document.createElement('tr');
+                    row.setAttribute('draggable', true);
+                    row.setAttribute('ondragstart', `drag(event, ${index})`);
+                    row.setAttribute('ondragover', 'allowDrop(event)');
+                    row.setAttribute('ondrop', `drop(event, ${index})`);
+                    row.innerHTML = `
+                        <td class="nro-pos">${index + 1}</td>
+                        <td class="nro-mesa">${capitalize(song.location ? song.location.replace('mesa', 'Mesa ') : "Mesa 1")}</td> <!-- Capitalizar Nro de Mesa -->
+                        <td class="nombre">${song.name}</td>
+                        <td class="artista">${song.artist}</td>
+                        <td class="cancion">${song.song}</td>
+                        <td class="tipo">${song.songType}</td>
+                        <td class="acciones">
+                            <button class="delete" onclick="deleteSong('${song.id}')">Eliminar</button>
+                        </td>
+                    `;
+                    songQueue.appendChild(row);
+                });
+            };
+
+            window.drag = function(event, index) {
+                event.dataTransfer.setData("text", index);
+            };
+
+            window.allowDrop = function(event) {
+                event.preventDefault();
+            };
+
+            window.drop = function(event, newIndex) {
+                event.preventDefault();
+                const oldIndex = event.dataTransfer.getData("text");
+                if (oldIndex !== newIndex) {
+                    moveSong(oldIndex, newIndex);
+                }
+            };
+
+            window.moveSong = function (oldIndex, newIndex) {
+                const updatedSongs = [...songs];
+                const [movedSong] = updatedSongs.splice(oldIndex, 1);
+                updatedSongs.splice(newIndex, 0, movedSong);
+
+                // Actualizar las posiciones en la base de datos
+                const updates = {};
+                updatedSongs.forEach((song, index) => {
+                    updates[`songs/${song.id}/position`] = index;
+                });
+
+                database.ref().update(updates)
+                    .then(() => {
+                        console.log('Canciones reordenadas correctamente.');
+                    })
+                    .catch((error) => {
+                        console.error('Error al reordenar las canciones:', error);
+                    });
+            };
+
+            window.deleteSong = function (id) {
+                database.ref(`songs/${id}`).remove()
+                    .then(() => {
+                        console.log('Canción eliminada.');
+                    })
+                    .catch((error) => {
+                        console.error('Error al eliminar la canción:', error);
+                    });
+            };
+
+            window.clearQueue = function () {
+                database.ref('songs').set(null)
+                    .then(() => {
+                        alert("Cola de canciones limpiada.");
+                    })
+                    .catch((error) => {
+                        console.error("Error al limpiar la cola:", error);
+                    });
+            };
+
+            // Función para capitalizar el texto
+            function capitalize(text) {
+                return text
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            }
+        });
+    </script>
+</body>
+</html>
