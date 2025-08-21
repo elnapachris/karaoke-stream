@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Admin - Visitantes</title>
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #444; text-align: center; }
+    button { padding: 6px 12px; margin: 2px; }
+    .habilitar { background: green; color: white; }
+    .deshabilitar { background: red; color: white; }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function renderVisitantes(snapshot) {
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+      const data = snapshot.val();
+      for (const id in data) {
+        const v = data[id];
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${v.nombre || "(sin nombre)"}</td>
+          <td>${v.habilitado ? '✅ Habilitado' : '❌ No habilitado'}</td>
+          <td>
+            <button class="habilitar" onclick="setEstado('${id}', true)">Habilitar</button>
+            <button class="deshabilitar" onclick="setEstado('${id}', false)">Deshabilitar</button>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function setEstado(id, estado) {
+      db.ref("visitantes/" + id).update({ habilitado: estado });
+    }
+
+    function limpiarVisitantes() {
+      db.ref("visitantes").once("value", snap => {
+        const data = snap.val();
+        for (const id in data) {
+          if (!data[id].nombre) {
+            db.ref("visitantes/" + id).remove();
+          }
+        }
+      });
+    }
+
+    window.onload = () => {
+      db.ref("visitantes").on("value", renderVisitantes);
+    };
+  </script>
+</head>
+<body>
+  <h2>🛠️ Panel Admin - Visitantes conectados</h2>
+  <button onclick="limpiarVisitantes()">🧹 Limpiar Visitantes</button>
+  <table>
+    <thead>
+      <tr><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</body>
+</html>

@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎤 Pedir una Canción</title>
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+    input, button { margin: 10px 0; padding: 10px; width: 90%; max-width: 600px; }
+    .success { color: lime; margin-top: 10px; }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let sessionId = localStorage.getItem("sessionId") || "anon-" + Math.random().toString(36).substring(7);
+    localStorage.setItem("sessionId", sessionId);
+
+    function checkPermission() {
+      db.ref("visitantes/" + sessionId).on("value", snap => {
+        const data = snap.val();
+        const button = document.getElementById("addBtn");
+        if (data && !data.habilitado) {
+          button.disabled = true;
+        } else {
+          button.disabled = false;
+        }
+      });
+    }
+
+    function agregarCancion() {
+      const nombre = document.getElementById("nombre").value.trim();
+      const cancion = document.getElementById("cancion").value.trim();
+      const artista = document.getElementById("artista").value.trim();
+      const successMsg = document.getElementById("success");
+
+      if (!nombre || !cancion || !artista) {
+        alert("Por favor completa todos los campos.");
+        return;
+      }
+
+      db.ref("songs").push({
+        mesa: "ONLINE",
+        nombre,
+        cancion,
+        artista,
+        tipo: "karaoke"
+      });
+
+      db.ref("visitantes/" + sessionId).update({ nombre, habilitado: false });
+      document.getElementById("addBtn").disabled = true;
+      successMsg.style.display = "block";
+    }
+
+    window.onload = () => {
+      db.ref("visitantes/" + sessionId).set({ nombre: "", habilitado: false });
+      checkPermission();
+    };
+  </script>
+</head>
+<body>
+  <h2>🎤 Pedir una Canción</h2>
+  <input id="nombre" placeholder="Tu nombre" />
+  <input id="cancion" placeholder="Canción" />
+  <input id="artista" placeholder="Artista" />
+  <button id="addBtn" onclick="agregarCancion()">Agregar Canción</button>
+  <div id="success" class="success" style="display:none;">✅ Canción agregada. ¡Gracias!</div>
+</body>
+</html>
