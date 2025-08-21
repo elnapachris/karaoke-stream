@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>🎤 Pedir Canción</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background-color: #111; color: white; font-family: sans-serif; text-align: center; padding: 30px; }
+        input, button { width: 80%; padding: 12px; margin: 10px 0; font-size: 16px; }
+        .success { color: limegreen; }
+    </style>
+</head>
+<body>
+    <h2>🎤 Pedir una Canción</h2>
+    <input type="text" id="nombre" placeholder="Tu Nombre">
+    <input type="text" id="cancion" placeholder="Canción">
+    <input type="text" id="artista" placeholder="Artista">
+    <button id="agregar">Agregar Canción</button>
+    <p id="mensaje"></p>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const sessionID = localStorage.getItem('sessionID') || Date.now().toString();
+        localStorage.setItem('sessionID', sessionID);
+
+        const nombreInput = document.getElementById('nombre');
+        const cancionInput = document.getElementById('cancion');
+        const artistaInput = document.getElementById('artista');
+        const mensaje = document.getElementById('mensaje');
+        const agregarBtn = document.getElementById('agregar');
+
+        function validarCampos() {
+            return nombreInput.value.trim() && cancionInput.value.trim() && artistaInput.value.trim();
+        }
+
+        function actualizarEstado(habilitado) {
+            db.ref('visitantes/' + sessionID).set({
+                nombre: nombreInput.value,
+                habilitado: habilitado
+            });
+        }
+
+        agregarBtn.onclick = () => {
+            if (!validarCampos()) {
+                mensaje.textContent = 'Por favor completa todos los campos.';
+                mensaje.style.color = 'orange';
+                return;
+            }
+
+            db.ref('songs').push({
+                nombre: nombreInput.value.trim(),
+                cancion: cancionInput.value.trim(),
+                artista: artistaInput.value.trim(),
+                tipo: "karaoke",
+                mesa: "ONLINE"
+            });
+
+            actualizarEstado(false); // deshabilitar
+            agregarBtn.disabled = true;
+            mensaje.textContent = '✅ Canción agregada. ¡Gracias!';
+            mensaje.className = 'success';
+        };
+
+        function verificarEstado() {
+            db.ref('visitantes/' + sessionID).on('value', snap => {
+                if (snap.exists()) {
+                    const habilitado = snap.val().habilitado;
+                    agregarBtn.disabled = !habilitado;
+                } else {
+                    agregarBtn.disabled = true;
+                }
+            });
+        }
+
+        verificarEstado();
+    </script>
+</body>
+</html>
