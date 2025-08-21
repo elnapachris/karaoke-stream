@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>🎤 Panel Admin - Visitantes conectados</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background-color: #111; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        table { margin: auto; border-collapse: collapse; width: 90%; margin-top: 20px; }
+        th, td { border: 1px solid #444; padding: 10px; }
+        th { background-color: #222; }
+        .btn { padding: 5px 10px; cursor: pointer; }
+        .enable { background-color: green; color: white; }
+        .disable { background-color: red; color: white; }
+        #limpiar { background-color: goldenrod; color: black; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h2>🛠️ Panel Admin - Visitantes conectados</h2>
+    <button id="limpiar" class="btn">🎤 Limpiar Visitantes</button>
+    <table>
+        <thead>
+            <tr><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
+        </thead>
+        <tbody id="tablaVisitantes"></tbody>
+    </table>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function cargarVisitantes() {
+            db.ref('visitantes').on('value', (snap) => {
+                const tbody = document.getElementById('tablaVisitantes');
+                tbody.innerHTML = '';
+                snap.forEach(v => {
+                    const data = v.val();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${data.nombre || ''}</td>
+                        <td>${data.habilitado ? '✅ Habilitado' : '❌ Deshabilitado'}</td>
+                        <td>
+                            <button class="btn enable" onclick="cambiarEstado('${v.key}', true)">Habilitar</button>
+                            <button class="btn disable" onclick="cambiarEstado('${v.key}', false)">Deshabilitar</button>
+                        </td>`;
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        function cambiarEstado(id, estado) {
+            db.ref('visitantes/' + id).update({ habilitado: estado });
+        }
+
+        document.getElementById('limpiar').onclick = () => {
+            db.ref('visitantes').remove();
+        };
+
+        cargarVisitantes();
+    </script>
+</body>
+</html>
