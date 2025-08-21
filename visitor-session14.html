@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pedir Canción</title>
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; }
+    input, button { padding: 10px; width: 80%; margin: 10px auto; display: block; }
+    button { background: #3f51b5; color: white; border: none; border-radius: 5px; }
+    .warning { color: orange; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h1>🎤 Pedir una Canción</h1>
+  <input type="text" id="nombreInput" placeholder="Tu nombre o mesa" />
+  <input type="text" id="cancionInput" placeholder="Nombre de la canción" />
+  <input type="text" id="artistaInput" placeholder="Nombre del artista" />
+  <button id="agregarBtn" disabled>Agregar Canción</button>
+  <div class="warning">🎧 Contacta al DJ para que habilite tu acceso</div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script>
+    var firebaseConfig = {
+      databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const nombreInput = document.getElementById("nombreInput");
+    const cancionInput = document.getElementById("cancionInput");
+    const artistaInput = document.getElementById("artistaInput");
+    const agregarBtn = document.getElementById("agregarBtn");
+
+    let sessionId = localStorage.getItem("sessionId");
+    if (!sessionId) {
+      sessionId = "mesa-" + Math.floor(Math.random() * 10000);
+      localStorage.setItem("sessionId", sessionId);
+      db.ref("visitantes/" + sessionId).set({ nombre: "", habilitado: false });
+    }
+
+    db.ref("visitantes/" + sessionId).on("value", snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        agregarBtn.disabled = !data.habilitado;
+      }
+    });
+
+    agregarBtn.addEventListener("click", () => {
+      const nombre = nombreInput.value.trim() || "desconocido";
+      const cancion = cancionInput.value.trim() || "desconocido";
+      const artista = artistaInput.value.trim() || "desconocido";
+
+      if (!cancion || !artista) return alert("Completa los campos.");
+
+      db.ref("visitantes/" + sessionId).update({ nombre });
+
+      db.ref("songs").push({
+        mesa: sessionId,
+        nombre,
+        cancion,
+        artista,
+        tipo: "karaoke"
+      });
+
+      cancionInput.value = "";
+      artistaInput.value = "";
+      agregarBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
