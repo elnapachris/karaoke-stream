@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Vista en Vivo - Karaoke</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #111; color: #eee; text-align: center; padding: 20px; }
+        h1 { color: #00ffff; }
+        table { margin: 0 auto; border-collapse: collapse; width: 90%; max-width: 800px; }
+        th, td { border: 1px solid #444; padding: 10px; }
+        th { background-color: #222; color: #0ff; }
+        tr:nth-child(even) { background-color: #222; }
+        tr:nth-child(odd) { background-color: #333; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDxGZCRzwlzjSp4PG9bpKCEp8I97B9lxvA",
+            authDomain: "karaokedatabase-c6a7d.firebaseapp.com",
+            databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com",
+            projectId: "karaokedatabase-c6a7d",
+            storageBucket: "karaokedatabase-c6a7d.appspot.com",
+            messagingSenderId: "301255865650",
+            appId: "1:301255865650:web:a0b2e0a6c2350d124e86c1"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function fetchSongs() {
+            db.ref("songs").on("value", snapshot => {
+                const songs = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.name && data.artist && data.song && data.songType) {
+                        songs.push(data);
+                    }
+                });
+                displaySongs(songs);
+            });
+        }
+
+        function displaySongs(songs) {
+            const table = document.getElementById("songTable");
+            table.innerHTML = `
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Artista</th>
+                    <th>Canción</th>
+                    <th>Tipo</th>
+                    <th>Mesa</th>
+                </tr>
+            `;
+
+            songs.forEach((song, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${song.name}</td>
+                    <td>${song.artist}</td>
+                    <td>${song.song}</td>
+                    <td>${song.songType}</td>
+                    <td>${(song.location || "").replace("mesa", "Mesa ").toUpperCase()}</td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        window.onload = fetchSongs;
+    </script>
+</head>
+<body>
+    <h1>🎤 Vista en Vivo - Lista de Canciones 🎶</h1>
+    <table id="songTable"></table>
+</body>
+</html>
