@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel Admin - Visitantes</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { background: #111; color: #fff; font-family: sans-serif; padding: 30px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border-bottom: 1px solid #555; text-align: center; }
+    button { padding: 5px 10px; margin: 2px; }
+    .habilitar { background: green; color: white; }
+    .deshabilitar { background: red; color: white; }
+  </style>
+</head>
+<body>
+  <h2>🛠️ Panel Admin - Visitantes conectados</h2>
+  <button onclick="limpiarVisitantes()">🧹 Limpiar Visitantes</button>
+  <table>
+    <thead>
+      <tr><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
+    </thead>
+    <tbody id="tablaVisitantes"></tbody>
+  </table>
+
+<script>
+  const firebaseConfig = {
+    databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const tabla = document.getElementById("tablaVisitantes");
+
+  function actualizarTabla() {
+    db.ref("visitantes").once("value", snap => {
+      tabla.innerHTML = "";
+      const data = snap.val();
+      if (!data) return;
+      for (const id in data) {
+        const v = data[id];
+        const nombre = v.nombre || "(Sin nombre)";
+        const estado = v.habilitado ? "✅ Habilitado" : "❌ No habilitado";
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${nombre}</td>
+          <td>${estado}</td>
+          <td>
+            <button class="habilitar" onclick="cambiarEstado('${id}', true)">Habilitar</button>
+            <button class="deshabilitar" onclick="cambiarEstado('${id}', false)">Deshabilitar</button>
+          </td>`;
+        tabla.appendChild(row);
+      }
+    });
+  }
+
+  function cambiarEstado(id, estado) {
+    db.ref("visitantes/" + id).update({ habilitado: estado }).then(actualizarTabla);
+  }
+
+  function limpiarVisitantes() {
+    db.ref("visitantes").once("value", snap => {
+      const data = snap.val();
+      for (const id in data) {
+        if (!data[id].nombre) {
+          db.ref("visitantes/" + id).remove();
+        }
+      }
+      setTimeout(actualizarTabla, 1000);
+    });
+  }
+
+  actualizarTabla();
+  setInterval(actualizarTabla, 4000);
+</script>
+</body>
+</html>

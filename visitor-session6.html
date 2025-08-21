@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pedir Canción</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 30px; }
+    input, button { padding: 10px; width: 60%; margin: 10px auto; display: block; }
+    button:disabled { background-color: #555; color: #999; }
+    .alerta { color: orange; margin-top: 10px; }
+    .exito { color: lightgreen; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>🎤 Pedir una Canción</h2>
+  <input type="text" id="nombre" placeholder="Tu nombre" />
+  <input type="text" id="cancion" placeholder="Canción" />
+  <input type="text" id="artista" placeholder="Artista" />
+  <button id="btnAgregar" disabled>Agregar Canción</button>
+  <div id="mensaje" class="alerta">🎧 Contacta al DJ para que habilite tu acceso</div>
+
+<script>
+  const firebaseConfig = {
+    databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const sessionId = sessionStorage.getItem("sessionId") || Math.random().toString(36).substr(2, 9);
+  sessionStorage.setItem("sessionId", sessionId);
+
+  const btnAgregar = document.getElementById("btnAgregar");
+  const mensaje = document.getElementById("mensaje");
+
+  const visitanteRef = db.ref("visitantes/" + sessionId);
+  visitanteRef.set({ nombre: "", habilitado: false });
+
+  visitanteRef.on("value", (snap) => {
+    const visitante = snap.val();
+    if (visitante && visitante.habilitado) {
+      btnAgregar.disabled = false;
+      mensaje.textContent = "🎵 Puedes agregar canciones";
+      mensaje.className = "exito";
+    } else {
+      btnAgregar.disabled = true;
+      mensaje.textContent = "🎧 Contacta al DJ para que habilite tu acceso";
+      mensaje.className = "alerta";
+    }
+  });
+
+  btnAgregar.onclick = () => {
+    const nombre = document.getElementById("nombre").value.trim();
+    const cancion = document.getElementById("cancion").value.trim();
+    const artista = document.getElementById("artista").value.trim();
+    if (!nombre || !cancion || !artista) return alert("Completa todos los campos");
+
+    db.ref("songs").push({ nombre, cancion, artista });
+    db.ref("visitantes/" + sessionId).update({ nombre });
+
+    document.getElementById("cancion").value = "";
+    document.getElementById("artista").value = "";
+    mensaje.textContent = "✅ Canción agregada. ¡Gracias!";
+    mensaje.className = "exito";
+  };
+</script>
+</body>
+</html>
