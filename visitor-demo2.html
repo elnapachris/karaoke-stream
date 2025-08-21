@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Agregar Canción (Controlado)</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 40px; background: #111; color: #fff; }
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+    }
+    button { background-color: #4caf50; color: white; cursor: pointer; }
+    button:disabled { background-color: #888; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h2>🎤 Pedir una Canción</h2>
+  <input type="text" id="nombre" placeholder="Tu nombre">
+  <br>
+  <input type="text" id="cancion" placeholder="Canción">
+  <br>
+  <input type="text" id="artista" placeholder="Artista">
+  <br>
+  <button id="btnAgregar" disabled>Agregar Canción</button>
+  <p id="status">Esperando habilitación del admin...</p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child, push, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZO0_L7XnP4E-ChOhvDERTjLhyVZhgqWY",
+      authDomain: "karaokedatabase-c6a7d.firebaseapp.com",
+      databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com/",
+      projectId: "karaokedatabase-c6a7d",
+      storageBucket: "karaokedatabase-c6a7d.appspot.com",
+      messagingSenderId: "340448181357",
+      appId: "1:340448181357:web:1152f5473929db98631364"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let visitorId = localStorage.getItem("visitorId");
+    if (!visitorId) {
+      visitorId = "visitor_" + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem("visitorId", visitorId);
+    }
+
+    const nombreInput = document.getElementById("nombre");
+    const btnAgregar = document.getElementById("btnAgregar");
+    const status = document.getElementById("status");
+
+    nombreInput.addEventListener("blur", () => {
+      if (nombreInput.value.trim() !== "") {
+        set(ref(db, 'visitantes/' + visitorId), {
+          nombre: nombreInput.value.trim(),
+          habilitado: false,
+          timestamp: Date.now()
+        });
+      }
+    });
+
+    async function verificarHabilitado() {
+      const snapshot = await get(child(ref(db), 'visitantes/' + visitorId));
+      if (snapshot.exists() && snapshot.val().habilitado) {
+        btnAgregar.disabled = false;
+        status.textContent = "✅ ¡Estás habilitado! Puedes pedir canción.";
+      } else {
+        setTimeout(verificarHabilitado, 3000);
+      }
+    }
+    verificarHabilitado();
+
+    btnAgregar.addEventListener("click", async () => {
+      const cancion = document.getElementById("cancion").value.trim();
+      const artista = document.getElementById("artista").value.trim();
+      const nombre = nombreInput.value.trim() || "Anon";
+
+      if (cancion && artista) {
+        const songRef = push(ref(db, 'songs'));
+        await set(songRef, {
+          name: nombre,
+          song: cancion,
+          artist: artista,
+          songType: "karaoke",
+          location: "online",
+          position: Date.now()
+        });
+        status.textContent = "🎶 Canción agregada. ¡Gracias!";
+        btnAgregar.disabled = true;
+
+        // Deshabilitar visitante tras agregar canción
+        await update(ref(db, 'visitantes/' + visitorId), { habilitado: false });
+      }
+    });
+  </script>
+</body>
+</html>
