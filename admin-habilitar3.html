@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Habilitar Usuarios</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #222; color: #fff; padding: 20px; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    th, td { padding: 12px; border: 1px solid #555; text-align: center; }
+    th { background-color: #444; }
+    button { padding: 6px 12px; margin: 2px; background: #4caf50; border: none; color: white; border-radius: 6px; cursor: pointer; }
+    .deshabilitar { background: #f44336; }
+  </style>
+</head>
+<body>
+  <h2>🛠️ Panel Admin - Visitantes conectados</h2>
+  <table id="tablaUsuarios">
+    <thead>
+      <tr><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZO0_L7XnP4E-ChOhvDERTjLhyVZhgqWY",
+      authDomain: "karaokedatabase-c6a7d.firebaseapp.com",
+      databaseURL: "https://karaokedatabase-c6a7d-default-rtdb.firebaseio.com/",
+      projectId: "karaokedatabase-c6a7d",
+      storageBucket: "karaokedatabase-c6a7d.appspot.com",
+      messagingSenderId: "340448181357",
+      appId: "1:340448181357:web:1152f5473929db98631364"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const tabla = document.getElementById("tablaUsuarios").querySelector("tbody");
+
+    onValue(ref(db, 'visitantes'), (snapshot) => {
+      tabla.innerHTML = '';
+      snapshot.forEach((child) => {
+        const id = child.key;
+        const data = child.val();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.nombre || "Sin nombre"}</td>
+          <td>${data.habilitado ? "✅ Habilitado" : "❌ No habilitado"}</td>
+          <td>
+            <button onclick="cambiarEstado('${id}', true)">Habilitar</button>
+            <button class="deshabilitar" onclick="cambiarEstado('${id}', false)">Deshabilitar</button>
+          </td>
+        `;
+        tabla.appendChild(row);
+      });
+    });
+
+    window.cambiarEstado = function(id, estado) {
+      update(ref(db, 'visitantes/' + id), { habilitado: estado });
+    };
+  </script>
+</body>
+</html>
