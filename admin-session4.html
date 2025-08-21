@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>🛠 Panel Admin - Visitantes</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body { background: #111; color: #fff; font-family: Arial; padding: 2em; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { padding: 0.5em; text-align: center; border: 1px solid #333; }
+    th { background: #333; }
+    td { background: #222; }
+    .habilitar { background: #4caf50; color: white; padding: 0.4em 1em; border: none; border-radius: 4px; }
+    .deshabilitar { background: #f44336; color: white; padding: 0.4em 1em; border: none; border-radius: 4px; }
+    .btn-limpiar { margin-top: 1em; background: #555; color: white; padding: 0.5em 1.5em; border-radius: 5px; border: none; }
+  </style>
+</head>
+<body>
+  <h2>🛠 Panel Admin - Visitantes conectados</h2>
+  <table>
+    <thead>
+      <tr><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
+    </thead>
+    <tbody id="tabla"></tbody>
+  </table>
+  <button class="btn-limpiar" onclick="limpiar()">🧹 Limpiar Visitantes</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9t7xqFMSMBrVAbY-fm9PUt60GeMmcNCM",
+      authDomain: "karaoke-napa.firebaseapp.com",
+      databaseURL: "https://karaoke-napa-default-rtdb.firebaseio.com",
+      projectId: "karaoke-napa",
+      storageBucket: "karaoke-napa.appspot.com",
+      messagingSenderId: "1057408720756",
+      appId: "1:1057408720756:web:7cb6a77f2c54eb77257190"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const tabla = document.getElementById("tabla");
+
+    function renderTabla(data) {
+      tabla.innerHTML = "";
+      for (const id in data) {
+        const item = data[id];
+        const nombre = item.nombre || "Sin nombre";
+        const estado = item.habilitado ? "✅ Habilitado" : "❌ No habilitado";
+        tabla.innerHTML += `
+          <tr>
+            <td>${nombre}</td>
+            <td>${estado}</td>
+            <td>
+              <button class="habilitar" onclick="actualizar('${id}', true)">Habilitar</button>
+              <button class="deshabilitar" onclick="actualizar('${id}', false)">Deshabilitar</button>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function actualizar(id, estado) {
+      db.ref("estadoVisitantes/" + id + "/habilitado").set(estado);
+    }
+
+    function limpiar() {
+      db.ref("estadoVisitantes").remove();
+    }
+
+    db.ref("estadoVisitantes").on("value", (snapshot) => {
+      const data = snapshot.val() || {};
+      renderTabla(data);
+    });
+  </script>
+</body>
+</html>

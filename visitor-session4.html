@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎤 Pedir una Canción</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body { background: #111; color: #fff; font-family: Arial; text-align: center; padding: 2em; }
+    input, button { padding: 0.5em; margin: 0.5em; border-radius: 5px; }
+    input { width: 80%; }
+    button { font-weight: bold; }
+    .disabled { background: #555; color: #ccc; cursor: not-allowed; }
+    .enabled { background: #4caf50; color: white; }
+    .message { margin-top: 1em; font-weight: bold; }
+    .warn { color: orange; }
+    .success { color: violet; }
+  </style>
+</head>
+<body>
+  <h2>🎤 Pedir una Canción</h2>
+  <input id="nombre" placeholder="Tu nombre" />
+  <input id="cancion" placeholder="Canción" />
+  <input id="artista" placeholder="Artista" />
+  <br />
+  <button id="botonAgregar" class="disabled" disabled>Agregar Canción</button>
+  <div id="mensaje" class="message warn">🎧 Contacta al DJ para que habilite tu acceso</div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9t7xqFMSMBrVAbY-fm9PUt60GeMmcNCM",
+      authDomain: "karaoke-napa.firebaseapp.com",
+      databaseURL: "https://karaoke-napa-default-rtdb.firebaseio.com",
+      projectId: "karaoke-napa",
+      storageBucket: "karaoke-napa.appspot.com",
+      messagingSenderId: "1057408720756",
+      appId: "1:1057408720756:web:7cb6a77f2c54eb77257190"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const sessionId = sessionStorage.getItem("sessionId") || Math.random().toString(36).substring(2);
+    sessionStorage.setItem("sessionId", sessionId);
+
+    const boton = document.getElementById("botonAgregar");
+    const nombreInput = document.getElementById("nombre");
+    const cancionInput = document.getElementById("cancion");
+    const artistaInput = document.getElementById("artista");
+    const mensaje = document.getElementById("mensaje");
+
+    const estadoRef = db.ref("estadoVisitantes/" + sessionId);
+    estadoRef.set({ habilitado: false, nombre: "" });
+
+    estadoRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      const habilitado = data && data.habilitado;
+
+      if (habilitado) {
+        boton.disabled = false;
+        boton.className = "enabled";
+        mensaje.textContent = "";
+      } else {
+        boton.disabled = true;
+        boton.className = "disabled";
+        mensaje.textContent = "🎧 Contacta al DJ para que habilite tu acceso";
+        mensaje.className = "message warn";
+      }
+    });
+
+    boton.onclick = () => {
+      const nombre = nombreInput.value.trim();
+      const cancion = cancionInput.value.trim();
+      const artista = artistaInput.value.trim();
+      if (!nombre || !cancion || !artista) return;
+
+      db.ref("canciones").push({ nombre, cancion, artista });
+      mensaje.textContent = "🎶 Canción agregada. ¡Gracias!";
+      mensaje.className = "message success";
+      cancionInput.value = "";
+      artistaInput.value = "";
+      boton.disabled = true;
+      boton.className = "disabled";
+
+      db.ref("estadoVisitantes/" + sessionId + "/habilitado").set(false);
+    };
+
+    nombreInput.oninput = () => {
+      db.ref("estadoVisitantes/" + sessionId + "/nombre").set(nombreInput.value.trim());
+    };
+  </script>
+</body>
+</html>
